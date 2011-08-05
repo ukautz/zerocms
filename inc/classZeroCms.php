@@ -17,7 +17,6 @@ function zc_log( $msg ) {
 
 class ZeroCms {
 	
-	private $is_admin = null;
 	private $textile = null;
 	private $current_path = null;
 	private $current_content = null;
@@ -82,12 +81,6 @@ class ZeroCms {
 		$start = microtime(true);
 		$parser = ZC_PARSER;
 		
-		
-		session_start();
-		
-		// are we admin ?
-		$this->is_admin = $this->isAdmin();
-		
 		// get path
 		$path = isset( $_REQUEST[ 'path' ] ) ? $_REQUEST[ 'path' ] : null;
 		if ( @empty( $path ) )
@@ -96,29 +89,6 @@ class ZeroCms {
 			$path = preg_replace( '#(?:\.tx|/+)$#', '', $path );
 		$this->current_path = $path;
 		zc_log( "PATH '$path'" );
-		
-		// admin can edit and save
-		if ( $this->is_admin ) {
-			
-			// save ?
-			if ( ! @empty( $_POST[ 'content' ] ) ) {
-				$this->_savePost( $_POST[ 'content' ], $path );
-				header( 'Location: /'. $path );
-			}
-			
-			// edit ?
-			elseif ( isset( $_REQUEST[ 'edit' ] ) ) {
-				print $this->_editForm( $path );
-				return;
-			}
-			
-			// clear cache ?
-			elseif ( isset( $_REQUEST[ 'clear-cache' ] ) ) {
-				$this->_cacheClear();
-				header( 'Location: /'. $path );
-				return;
-			}
-		}
 		
 		// dont give a ** about non-utf8
 		header( 'Content-type: text/html; charset=utf8' );
@@ -130,10 +100,7 @@ class ZeroCms {
 		
 		// no content received -> 404
 		if ( is_null( $content ) ) {
-			$content = '<div class="error">'. ( $this->is_admin
-				? 'Page not found, <a href="?edit=1" class="admin-edit">create</a> now'
-				: 'Page not found 404'
-			). '</div>';
+			$content = '<div class="error">Page not found 404</div>';
 			$this->current_error = '404';
 			$content = $this->_renderLayout( $content );
 		}
@@ -149,41 +116,6 @@ class ZeroCms {
 	}
 	
 	
-	/**
-	 * Returns bool wheter this current session user is admin or not.
-	 * Also takes care of authentication -> login and logout.
-	 *
-	 * @return bool
-	 * @access public
-	 */
-	public function isAdmin() {
-		if ( ! is_null( $this->is_admin ) )
-			return $this->is_admin;
-		
-		// is logged in
-		if ( isset( $_SESSION[ 'admin' ] ) && $_SESSION[ 'admin' ] == 'yes' ) {
-			
-			// want log out
-			if ( isset( $_REQUEST[ 'logout' ] ) && $_REQUEST[ 'logout' ] == '1' ) {
-				unset( $_SESSION[ 'admin' ] );
-				return false;
-			}
-			return true;
-		}
-		
-		// do login
-		elseif ( isset( $_REQUEST[ 'login' ] )
-			&& $_REQUEST[ 'login' ] == ZC_ADMIN_LOGIN
-			&& isset( $_REQUEST[ 'password' ] )
-			&& $_REQUEST[ 'password' ] == ZC_ADMIN_PASSWORD
-		) {
-			$_SESSION[ 'admin' ] = 'yes';
-			return true;
-		}
-		
-		// no way
-		return false;
-	}
 	
 	
 	/**
@@ -338,7 +270,7 @@ class ZeroCms {
 	 * @access private
 	 */
 	public function _cacheWrite( $name, $value ) {
-		if ( ZC_CACHE == 'none' || $this->isAdmin() ) return; // admin -> no cache
+		if ( ZC_CACHE == 'none' ) return;
 		$name = $this->_cacheName( $name );
 		if ( ZC_CACHE == 'apc' ) {
 			apc_store( ZC_CACHE_PREFIX. $name, $value );
@@ -360,7 +292,7 @@ class ZeroCms {
 	 * @access private
 	 */
 	public function _cacheRead( $name ) {
-		if ( ZC_CACHE == 'none' || $this->isAdmin() ) return null; // admin -> no cache
+		if ( ZC_CACHE == 'none' ) return null; // admin -> no cache
 		
 		$content = null;
 		$name = $this->_cacheName( $name );
