@@ -1,0 +1,116 @@
+###title This is ZeroCMS
+###toc
+
+Zero CMS is a *minimalistic CMS / Wiki* based on Textile. 
+
+It is file based and does not require any database, so it can be easily deployed. For performance, it uses either APC or file-cache. Especially with the former, it is *lightning fast*.
+
+Who needs this and who doesn't ? I don't know, but if you don't want to install a CMS containing tens of thousands of lines of code and providing hundreds of features and tools you will never use, you might like ZeroCMS. However, you probably have to be a bit of a geek.
+
+The whole CMS wastes not more then *192kb* of your space, whereof about 4/5 is the Textile- and Markdown-library, so the CMS itself is about 28kb. The rest is docu, your theme and your contents. In the age of terrabyte-sized hard disks this does not impress that much, but it should draw you a picture of how minimalistic it is.
+
+h1. Install
+
+# Download (git, zipped, ..)
+# Unpack
+# Upload to your webserver in some folder
+# Make sure the content/ directory is writable
+# Editr the config.php file
+# Have a look in the .htaccess file and change the /subdir accordingly
+# Done 
+
+
+h2. Requirements
+
+* PHP >= 5.1
+
+h1. Usage
+
+With the default theme comes a _login.php_ file in the @themes/ugly@ folder and a @.login.tx@ file in the content folder. You can now login by going to @http://yourdomain.tld/login@. The default login is "admin" and the default password "pass" (please.. change it).
+
+After being logged in, go to the start page @http://yourdomain.tld/@ and click on the "Edit" link in the footer.
+
+You can *create a new page* either by navigating your to the page you want to create, eg @http://yourdomain.tld/my-new-page@. Than click on the create link. After saving, the page is created and published.
+
+Or you just edit the @.tx@ files directly from the shell or wherever. Up to you.
+
+h2. Loading/including file parts/snippets
+
+There are two ways to load a partial template into another one.
+
+h3. Loading textile files
+
+Therfore you have to use the @###render@ directive. Simply state something like the following:
+
+<pre>###render snippets/filepart</pre>
+
+This will look in the content/snippets folder for a file named @filepart.tx@ . If found, it will be rendered (Textile) and place placed where the @###render@ directive was.
+
+h3. Loading php files
+
+This requires you to modify an existing or creating a new theme. In the theme folder. Assuming you have a @.php@ file called "sidebar.php" in your theme folder (eg @themes/mytheme/sidebar.php@ ), you can load this file in any @.tx@ file like so:
+
+<pre>###load sidebar</pre>
+
+h2. Setting a page title
+
+If you use the automatic generated navi, you can change the labels used in the navigation. If you don't, they will default to the file name.
+
+Using titles is quite simple. Put the @###title@ directive in the first line of your @.tx@ file (doesn't have to be in the first line, but parsing will be slower if it has to go till the last line..):
+
+<pre>###title My alternative site title</pre>
+
+The generated site navi will now use this title instead of the file name.
+
+h3. Page navi position
+
+You can modify the position of the page by prefixing the title with a number and colon, like so:
+
+_On the first page_
+
+<pre>###title 1:I am first</pre>
+
+_On the second page_
+
+<pre>###title 2:I am second</pre>
+
+h2. Using a table of content (TOC)
+
+This can be done by putting the @###toc@ directive anywhere. Eg
+
+<pre>###toc</pre>
+
+or
+
+<pre>###toc Some TOC title</pre>
+
+ZeroCMS will do the rest..
+
+h2. Special folders, files
+
+h3. Snippets folder
+
+The content/snippets folder is somewhat special, because it will not be included in the navi-generation. The general idea is to put here any partial files which you will in include with the @###render@ directive.
+
+h3. Hidden files
+
+You can use hidden files, beginning with a dot ("."). Those can be linked, but will not be included in the navi.
+
+Example: You put a file called @.somefile.tx@ in the contents folder, now you can reach it via @http://yourdomain.tld/somefile@, but it will not be part of the generated navigation.
+
+h2. Creating a custom theme
+
+Best starting point would be to copy the default them folder. You have to have a _layout.php_, which should output somehere @$zcms->getContent()@ . Look in the default layout.php, it's not that hard and there are not so many possibilities. Also a login mechanism form, as provided in the default them, would be nice. However, you can also manipulate the URL by your self.
+
+Now it's up to you.
+
+h2. Keep in mind
+
+h3. Loading PHP files
+
+You can load .php files from the themes folder. But keep in mind, that this reduces / breaks the interoperability between themes (your content references a file in a specific theme!).
+
+h3. Backup
+
+Because the whole database consists of small .tx files, you can backup them by copying them somewhere else. So, do it. 
+
