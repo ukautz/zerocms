@@ -1,6 +1,6 @@
 h1. ZeroCMS
 
-Zero CMS is a *minimalistic CMS / Wiki* based on Textile - or Markdown, if you like.
+Zero CMS is a *minimalistic CMS / Wiki* based on Textile (or Markdown, if you like). 
 
 It is file based and does not require any database, so it can be easily deployed. For performance, it uses either APC or file-cache. Especially with the former, it is *lightning fast*.
 
@@ -23,15 +23,13 @@ h2. Requirements
 
 * PHP >= 5.1
 
+h1. See it in action
+
+* http://www.decency-antispam.org/
+
 h1. Usage
 
-With the default theme comes a _login.php_ file in the @themes/ugly@ folder and a @.login.tx@ file in the content folder. You can now login by going to @http://yourdomain.tld/login@. The default login is "admin" and the default password "pass" (please.. change it).
-
-After being logged in, go to the start page @http://yourdomain.tld/@ and click on the "Edit" link in the footer.
-
-You can *create a new page* either by navigating your to the page you want to create, eg @http://yourdomain.tld/my-new-page@. Than click on the create link. After saving, the page is created and published.
-
-Or you just edit the @.tx@ files directly from the shell or wherever. Up to you.
+You can *create or edit a page* by editing / creating the @.tx@-file in the @content/@-folder. Eg, create the file @content/somefile.tx@ and you can reach it via @http://yourdomain.tld/somefile.tx@. You can create sub-folders and stuff withunder.
 
 h2. Loading/including file parts/snippets
 
@@ -99,9 +97,9 @@ Example: You put a file called @.somefile.tx@ in the contents folder, now you ca
 
 h2. Creating a custom theme
 
-Best starting point would be to copy the default them folder. You have to have a _layout.php_, which should output somehere @$zcms->getContent()@ . Look in the default layout.php, it's not that hard and there are not so many possibilities. Also a login mechanism form, as provided in the default them, would be nice. However, you can also manipulate the URL by your self.
+Best starting point would be to copy the @ugly@ theme folder. Then edit the @layout.php@ according to your needs.
 
-Now it's up to you.
+Thats it.
 
 h2. Keep in mind
 
