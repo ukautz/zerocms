@@ -1,3 +1,11 @@
 ###title 1:Sub sub page in page 2
 
-Another page..
+Another page.. with included content:
+
+---
+
+###render snippets/sample.tx
+
+---
+
+Wow..

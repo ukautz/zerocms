@@ -1,6 +1,3 @@
-###title 1:Home
-###toc
-
 Zero CMS is a *minimalistic CMS / Wiki* based on Textile (or Markdown, if you like). 
 
 It is file based and does not require any database, so it can be easily deployed. For performance, it uses either APC or file-cache. Especially with the former, it is *lightning fast*.
