@@ -1,13 +1,19 @@
 ###title 1:Home
 ###toc
 
-Zero CMS is a *minimalistic CMS / Wiki* based on Textile (or Markdown, if you like). 
+h1. About
 
-It is file based and does not require any database, so it can be easily deployed. For performance, it uses either APC or file-cache. Especially with the former, it is *lightning fast*.
+ZeroCMS is a scaled down CMS for the everyday programmer.
 
-Who needs this and who doesn't ? I don't know, but if you don't want to install a CMS containing tens of thousands of lines of code and providing hundreds of features and tools you will never use, you might like ZeroCMS. However, you probably have to be a bit of a geek.
+* *Minimalistic*: ZeroCMS is basically a Textile (or Markdown) parser + glue
+* *Lightning fast*: Even without caches, i've measured something between 5-15ms per request
+* *Install everywhere*: It does not require a database and runs in any PHP >= 5.1 environment out-of-the-box.
 
-The whole CMS wastes not more then *192kb* of your space, whereof about 4/5 is the Textile- and Markdown-library, so the CMS itself is about 28kb. The rest is docu, your theme and your contents. In the age of terrabyte-sized hard disks this does not impress that much, but it should draw you a picture of how minimalistic it is.
+h2. Who needs this?
+
+If you don't want to install a CMS containing tens of thousands of lines of code and providing hundreds of features and tools you'll never use: you might like ZeroCMS. However, you probably have to be a bit of a geek.
+
+The whole CMS wastes not more then *47kb* <small>(cleaned: removed all not used syntax parsers)</small> of your space. The rest is your theme and your contents. In the age of terrabyte-sized hard disks this does not impress that much, but it should draw you a picture of how minimalistic it is.
 
 h1. See it in action
 

@@ -243,7 +243,6 @@ class TextileAlike {
 	 */
 	private function _parseLinksPlain( $match ) {
 		list( $orig, $link, $post ) = $match;
-		error_log( "YADDA ORIG '$orig', LINK '$link', POST '$post'" );
 		$text = $link;
 		if ( ! preg_match( '/[\.!?,;:<>\(\)\[\]\{\}"\'\+\-\$]/', $post ) ) {
 			$link .= $post;
