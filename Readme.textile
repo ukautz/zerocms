@@ -8,6 +8,10 @@ Who needs this and who doesn't ? I don't know, but if you don't want to install 
 
 The whole CMS wastes not more then *192kb* of your space, whereof about 4/5 is the Textile- and Markdown-library, so the CMS itself is about 28kb. The rest is docu, your theme and your contents. In the age of terrabyte-sized hard disks this does not impress that much, but it should draw you a picture of how minimalistic it is.
 
+h2. See it in action
+
+http://www.decency-antispam.org/
+
 h1. Install
 
 # Download (git, zipped, ..)
