@@ -1,4 +1,5 @@
-h1. ZeroCMS
+###title 1:Home
+###toc
 
 Zero CMS is a *minimalistic CMS / Wiki* based on Textile (or Markdown, if you like). 
 
@@ -8,20 +9,19 @@ Who needs this and who doesn't ? I don't know, but if you don't want to install 
 
 The whole CMS wastes not more then *192kb* of your space, whereof about 4/5 is the Textile- and Markdown-library, so the CMS itself is about 28kb. The rest is docu, your theme and your contents. In the age of terrabyte-sized hard disks this does not impress that much, but it should draw you a picture of how minimalistic it is.
 
-h2. See it in action
+h1. See it in action
 
-http://www.decency-antispam.org/
+* http://www.decency-antispam.org/
 
 h1. Install
 
 # Download (git, zipped, ..)
 # Unpack
 # Upload to your webserver in some folder
-# Make sure the content/ directory is writable
+# Make sure the @content/@ directory is writable
 # Editr the config.php file
 # Have a look in the .htaccess file and change the /subdir accordingly
 # Done 
-
 
 h2. Requirements
 
@@ -33,7 +33,27 @@ h1. See it in action
 
 h1. Usage
 
-You can *create or edit a page* by editing / creating the @.tx@-file in the @content/@-folder. Eg, create the file @content/somefile.tx@ and you can reach it via @http://yourdomain.tld/somefile.tx@. You can create sub-folders and stuff withunder.
+You can either create/update/delete files directly on the file system or via the admin interface in your browser - or both.
+
+h2. File system
+
+Edit (create/update/delete) the @.tx@ files directly, upload them to your webspace. Done.
+
+h2. Webinterface
+
+Editing the content is quite simple:
+
+# Edit your config.php, set a username in @ZC_ADMIN_LOGIN@ and your and password in @ZC_ADMIN_PASSWORD@.
+# Go to the login page (http://yourwebite/login)
+# Login
+# Go to an arbitrary page, click on the "Edit Page" button (default: below the content)
+# Edit the content
+# Save
+# Done
+
+To create a new page, navigate to the path you want to create, while logged in, and save the page.
+
+h1. Syntax
 
 h2. Loading/including file parts/snippets
 
@@ -87,13 +107,15 @@ or
 
 ZeroCMS will do the rest..
 
+A default TOC-title can be set in @ZC_TOC_DEFAULT_TITLE@ in the @config.php@.
+
 h2. Special folders, files
 
 h3. Snippets folder
 
-The content/snippets folder is somewhat special, because it will not be included in the navi-generation. The general idea is to put here any partial files which you will in include with the @###render@ directive.
+The @content/snippets@ folder is somewhat special, because it will not be included in the navi-generation. The general idea is to put here any partial files which you will in include with the @###render@ directive.
 
-h3. Hidden files
+h3. Hidden files / menu items
 
 You can use hidden files, beginning with a dot ("."). Those can be linked, but will not be included in the navi.
 
@@ -109,12 +131,9 @@ h2. Keep in mind
 
 h3. Loading PHP files
 
-You can load .php files from the themes folder. But keep in mind, that this reduces / breaks the interoperability between themes (your content references a file in a specific theme!).
+You can load @.php@ files from the themes folder. But keep in mind, that this reduces / breaks the interoperability between themes (your content references a file in a specific theme!).
 
 h3. Backup
 
 Because the whole database consists of small .tx files, you can backup them by copying them somewhere else. So, do it. 
 
-h1. Disclaimer
-
-No warranties or guaranties of any kind are given. 

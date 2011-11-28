@@ -17,6 +17,7 @@ function zc_log( $msg ) {
 
 class ZeroCms {
 	
+	private $is_admin = null;
 	private $textile = null;
 	private $current_path = null;
 	private $current_content = null;
@@ -81,6 +82,12 @@ class ZeroCms {
 		$start = microtime(true);
 		$parser = ZC_PARSER;
 		
+		// init session
+		session_start();
+		
+		// are we admin ?
+		$this->is_admin = $this->isAdmin();
+		
 		// get path
 		$path = isset( $_REQUEST[ 'path' ] ) ? $_REQUEST[ 'path' ] : null;
 		if ( @empty( $path ) )
@@ -90,8 +97,31 @@ class ZeroCms {
 		$this->current_path = $path;
 		zc_log( "PATH '$path'" );
 		
+		// admin can edit and save
+		if ( $this->is_admin ) {
+			
+			// save ?
+			if ( ! @empty( $_POST[ 'content' ] ) ) {
+				$this->_savePost( $_POST[ 'content' ], $path );
+				header( 'Location: /'. $path );
+			}
+			
+			// edit ?
+			elseif ( isset( $_REQUEST[ 'edit' ] ) ) {
+				print $this->_editForm( $path );
+				return;
+			}
+			
+			// clear cache ?
+			elseif ( isset( $_REQUEST[ 'clear-cache' ] ) ) {
+				$this->_cacheClear();
+				header( 'Location: /'. $path );
+				return;
+			}
+		}
+		
 		// dont give a ** about non-utf8
-		header( 'Content-type: text/html; charset=utf8' );
+		header( 'Content-type: text/html; charset='+ ZC_CHARSET_OUT );
 		
 		// get site contents
 		$this->render_marker = array();
@@ -113,6 +143,43 @@ class ZeroCms {
 		
 		// print, done
 		print $content;
+	}
+	
+	
+	/**
+	 * Returns bool wheter this current session user is admin or not.
+	 * Also takes care of authentication -> login and logout.
+	 *
+	 * @return bool
+	 * @access public
+	 */
+	public function isAdmin() {
+		if ( ! is_null( $this->is_admin ) )
+			return $this->is_admin;
+		
+		// is logged in
+		if ( isset( $_SESSION[ 'admin' ] ) && $_SESSION[ 'admin' ] == 'yes' ) {
+			
+			// want log out
+			if ( isset( $_REQUEST[ 'logout' ] ) && $_REQUEST[ 'logout' ] == '1' ) {
+				unset( $_SESSION[ 'admin' ] );
+				return false;
+			}
+			return true;
+		}
+		
+		// do login
+		elseif ( isset( $_REQUEST[ 'login' ] )
+			&& $_REQUEST[ 'login' ] == ZC_ADMIN_LOGIN
+			&& isset( $_REQUEST[ 'password' ] )
+			&& $_REQUEST[ 'password' ] == ZC_ADMIN_PASSWORD
+		) {
+			$_SESSION[ 'admin' ] = 'yes';
+			return true;
+		}
+		
+		// no way
+		return false;
 	}
 	
 	
@@ -270,7 +337,7 @@ class ZeroCms {
 	 * @access private
 	 */
 	public function _cacheWrite( $name, $value ) {
-		if ( ZC_CACHE == 'none' ) return;
+		if ( ZC_CACHE == 'none' || $this->isAdmin() ) return;
 		$name = $this->_cacheName( $name );
 		if ( ZC_CACHE == 'apc' ) {
 			apc_store( ZC_CACHE_PREFIX. $name, $value );
@@ -292,7 +359,7 @@ class ZeroCms {
 	 * @access private
 	 */
 	public function _cacheRead( $name ) {
-		if ( ZC_CACHE == 'none' ) return null; // admin -> no cache
+		if ( ZC_CACHE == 'none' || $this->isAdmin() ) return null; // admin -> no cache
 		
 		$content = null;
 		$name = $this->_cacheName( $name );
@@ -367,7 +434,7 @@ class ZeroCms {
 			return $this->_cacheRead( 'site-content-'. $path );
 		
 		// read contents
-		$site_content = $this->_encodeForOutput( file_get_contents( $path ) );
+		$site_content = file_get_contents( $path );
 		
 		// parse load/render (recursive)
 		$site_content = preg_replace_callback(
@@ -705,7 +772,7 @@ class ZeroCms {
 		return $this->_renderLayout( join( '', array(
 			'<form id="adminedit" method="post">',
 				'<textarea name="content">',
-					htmlentities( $content ),
+					preg_replace( '/</', '&lt;', preg_replace( '/>/', '&gt;', $content ) ),
 				'</textarea>',
 				'<input type="hidden" name="path" value="'. $path_orig. '" />',
 				'<button name="save">Save</button>',
@@ -990,28 +1057,9 @@ class ZeroCms {
 		}
 		
 		// write file content
-		file_put_contents( $abs_path, $this->_encodeForOutput( $content ) );
+		file_put_contents( $abs_path, $content );
 		if ( ! file_exists( $abs_path ) )
 			throw new Exception( "Could not create file '$abs_path'" );
-	}
-	
-	
-	/**
-	 * Get contents of a local file, tries to convert in the required charset
-	 * as defined in ZC_CHARSET_CONVERT
-	 * @param string $file_path path to content
-	 * @return the updated ocnntet
-	 **/
-	private function _encodeForOutput( $content ) {
-		if ( defined( 'ZC_DO_CHARSET_DECODING' ) || (
-			defined( 'ZC_CHARSET_OUT' ) && ZC_CHARSET_OUT
-			&& function_exists( 'mb_convert_encoding' )
-		) ) {
-			if ( ! defined( 'ZC_DO_CHARSET_DECODING' ) )
-				define( 'ZC_DO_CHARSET_DECODING', true );
-			$content = mb_convert_encoding( $content, ZC_CHARSET_OUT );
-		}
-		return $content;
 	}
 }
 

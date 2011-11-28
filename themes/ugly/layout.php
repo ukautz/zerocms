@@ -14,7 +14,12 @@
 	<body>
 		<div id="main">
 			<h1 class="title">
-				<?php echo $zcms->getTitle(); ?>
+				<a href="<?php echo ZC_RELDIR ?>">
+					ZeroCMS Demo
+				</a>
+				<span>
+					<?php echo $zcms->getTitle(); ?>
+				</span>
 			</h1>
 			<div id="content">
 				<?php echo $zcms->getNavi(); ?>
@@ -22,6 +27,15 @@
 				<?php echo $zcms->getContent(); ?>
 			</div>
 		</div>
+		<?php if ( $zcms->isAdmin() ) { ?>
+		<div id="adminbar">
+			<a href="?edit=1">Edit Page</a>
+			|
+			<a href="?clear-cache=1">Clear Caches</a>
+			|
+			<a href="?logout=1">Logout</a>
+		</div>
+		<?php } ?>
 		<div id="footer">
 			Powered by <a class="none" href="http://github.com/ukautz/zerocms">ZeroCMS</a>
 		</div>
