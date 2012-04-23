@@ -22,6 +22,16 @@
 				</span>
 			</h1>
 			<div id="content">
+				<?php $zcmsSearchPlugin = $zcms->getPlugin( 'searchengine' ); ?>
+				<form method="get" action="/search" class="search-form">
+					<label>
+						<span>Search for</span>
+						<input type="text" name="s" value="<?php echo $zcmsSearchPlugin->getSearchStringHtml() ?>" />
+					</label>
+					<button type="submit">
+						Search
+					</button>
+				</form>
 				<?php echo $zcms->getNavi(); ?>
 				<?php echo $zcms->getBreadCrump(); ?>
 				<?php echo $zcms->getContent(); ?>

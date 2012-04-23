@@ -75,7 +75,7 @@ class ZeroCmsPluginSearchEngine extends ZeroCmsPlugin {
 					//
 					
 					$search_result_links = array_keys( $search_result );
-					usort( $search_result_links, function ( $a, $b ) {
+					function _search_result_links( $a, $b ) {
 						global $search_result;
 						return $search_result[ $a ] == $search_result[ $b ]
 							? 0
@@ -83,7 +83,8 @@ class ZeroCmsPluginSearchEngine extends ZeroCmsPlugin {
 								? 1
 								: -1
 							);
-					} );
+					}
+					usort( $search_result_links, '_search_result_links' );
 					$this->search_result = $search_result_links;
 				}
 				
@@ -102,7 +103,7 @@ class ZeroCmsPluginSearchEngine extends ZeroCmsPlugin {
 		}
 		
 		// adminstrative: rebuild
-		elseif ( $path == 'rebuild-search' ) { // && $this->getZcms()->isAdmin() ) {
+		elseif ( $path == 'rebuild-search' && $this->getZcms()->isAdmin() ) {
 			
 			// generate search database
 			$search_index = $this->_buildSearchIndex( ZC_CONTENTS );
