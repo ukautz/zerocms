@@ -11,6 +11,9 @@
  *
  **/
 
+
+define( 'DS', DIRECTORY_SEPARATOR );
+
 function zc_log( $msg ) {
 	if ( ZC_DEBUG ) error_log( $msg );
 }
@@ -27,6 +30,8 @@ class ZeroCms {
 	private $current_breadcrump = null;
 	private $render_seen = null;
 	private $render_marker = null;
+	private $plugins = array();
+	private $has_plugins = false;
 	
 	
 	public function __construct() {
@@ -59,6 +64,19 @@ class ZeroCms {
 			$this->textile = new $parser();
 		}
 		
+		// include
+		if ( is_dir( ZC_DIR. DS. 'plugins' ) ) {
+			$dh = opendir( ZC_DIR. DS. 'plugins' );
+			while( ( $file = readdir( $dh ) ) !== false ) {
+				if ( ! preg_match( '/\.php$/', $file ) ) continue;
+				include_once( ZC_DIR. DS. 'plugins'. DS. $file );
+				if ( preg_match( '/^class(ZeroCmsPlugin(.+))\.php$/', $file, $match ) ) {
+					$this->plugins[ strtolower( $match[2] ) ] = new $match[1]( &$this );
+					$this->has_plugins = true;
+				}
+			}
+			closedir( $dh );
+		}
 	}
 	
 	/**
@@ -102,7 +120,12 @@ class ZeroCms {
 			
 			// save ?
 			if ( ! @empty( $_POST[ 'content' ] ) ) {
-				$this->_savePost( $_POST[ 'content' ], $path );
+				try {
+					$this->_pluginRunHook( 'PreSave', array( $path ) );
+					$this->_savePost( $_POST[ 'content' ], $path );
+					$this->_pluginRunHook( 'PostSave', array( $path ) );
+				}
+				catch( Exception $e ) {}
 				header( 'Location: /'. $path );
 			}
 			
@@ -115,18 +138,36 @@ class ZeroCms {
 			// clear cache ?
 			elseif ( isset( $_REQUEST[ 'clear-cache' ] ) ) {
 				$this->_cacheClear();
+				$this->_pluginRunHook( 'PostClearCache', array( $path ) );
 				header( 'Location: /'. $path );
 				return;
 			}
 		}
 		
 		// dont give a ** about non-utf8
-		header( 'Content-type: text/html; charset='+ ZC_CHARSET_OUT );
+		#header( 'Content-type: text/html; charset='+ ZC_CHARSET_OUT );
+		header( 'Content-type: text/html' );
 		
 		// get site contents
 		$this->render_marker = array();
 		$this->render_seen = array();
-		$content = $this->_renderPage( $path );
+		
+		$content = null;
+		try {
+			$this->_pluginRunHook( 'PreContentRender', array( $path ) );
+			$content = $this->_renderPage( $path );
+			$this->_pluginRunHook( 'PostContentRender', array( $path, $content ) );
+		}
+		catch( ZeroCmsHookException $e ) {
+			if ( $e->hasArg( 'content' ) ) {
+				$content = $e->getArg( 'content' );
+				if ( ! $e->hasArg( 'noLayout' ) || $e->getArg( 'noLayout' ) !== true )
+					$content = $this->_renderLayout( $content );
+			}
+			elseif ( $e->hasArg( 'fallback' ) && $e->getArg( 'fallback' ) === true )
+				$content = $this->_renderPage( $path );
+			error_log( "** EXCEPTION: '$e' **" );
+		}
 		
 		// no content received -> 404
 		if ( is_null( $content ) ) {
@@ -292,7 +333,7 @@ class ZeroCms {
 	public function getNavi( $tag_name = 'ul' ) {
 		
 		// check cache
-		if ( ! is_null( $cached = $this->_cacheRead( 'site-navi-'. $this->getPath() ) ) )
+		if ( ! is_null( $cached = $this->cacheRead( 'site-navi-'. $this->getPath() ) ) )
 			return $cached;
 		
 		// get site strucutre
@@ -307,7 +348,7 @@ class ZeroCms {
 		$html = $this->_buildNaviListHtml( $list, $tag_name, 'navi', array( 'isInPath' ) );
 		
 		// write cache (?)
-		$this->_cacheWrite( 'site-navi-'. $this->getPath(), $html );
+		$this->cacheWrite( 'site-navi-'. $this->getPath(), $html );
 		
 		return $html;
 	}
@@ -327,6 +368,22 @@ class ZeroCms {
 	
 	
 	
+	public function getPlugin( $name ) {
+		if ( isset( $this->plugins[ $name ] ) )
+			return $this->plugins[ $name ];
+		return null;
+	}
+	
+	private function _pluginRunHook( $hook, $args = array() ) {
+		$hook_method = "hook$hook";
+		foreach ( $this->plugins as $name => $instance ) {
+			if ( ! method_exists( $instance, $hook_method ) ) continue;
+			call_user_method_array( $hook_method, $instance, $args );
+		}
+		return true;
+	}
+	
+	
 	/**
 	 * Writes to cache.
 	 * Uses either APC or file-cache according to ZC_CACHE ("apc" or "file")
@@ -336,7 +393,7 @@ class ZeroCms {
 	 * @return void
 	 * @access private
 	 */
-	public function _cacheWrite( $name, $value ) {
+	public function cacheWrite( $name, $value ) {
 		if ( ZC_CACHE == 'none' || $this->isAdmin() ) return;
 		$name = $this->_cacheName( $name );
 		if ( ZC_CACHE == 'apc' ) {
@@ -358,7 +415,7 @@ class ZeroCms {
 	 * @return mixed the content
 	 * @access private
 	 */
-	public function _cacheRead( $name ) {
+	public function cacheRead( $name ) {
 		if ( ZC_CACHE == 'none' || $this->isAdmin() ) return null; // admin -> no cache
 		
 		$content = null;
@@ -429,9 +486,9 @@ class ZeroCms {
 		$stat = stat( $path );
 		
 		// try cache, if found -> return cached
-		$cached_time = $this->_cacheRead( 'site-timestamp-'. $path );
+		$cached_time = $this->cacheRead( 'site-timestamp-'. $path );
 		if ( ! is_null( $cached_time ) && $cached_time > $stat[9] )
-			return $this->_cacheRead( 'site-content-'. $path );
+			return $this->cacheRead( 'site-content-'. $path );
 		
 		// read contents
 		$site_content = file_get_contents( $path );
@@ -453,7 +510,7 @@ class ZeroCms {
 		$site_content = preg_replace( '/^###(title|index)[^\n\r]+/ms', '', $site_content );
 		
 		// render textile
-		$site_rendered = $this->_render( $site_content );
+		$site_rendered = $this->render( $site_content );
 		
 		// clear paragraphs ?
 		if ( ZC_CLEAR_EMPTY_PARAGRAPHS )
@@ -466,8 +523,8 @@ class ZeroCms {
 		;
 		
 		// cache now (unless admin)
-		$this->_cacheWrite( 'site-timestamp-'. $path, time() );
-		$this->_cacheWrite( 'site-content-'. $path, $rendered );
+		$this->cacheWrite( 'site-timestamp-'. $path, time() );
+		$this->cacheWrite( 'site-content-'. $path, $rendered );
 		
 		// return
 		return $rendered;
@@ -483,7 +540,7 @@ class ZeroCms {
 	 * @return string the rendered HTML
 	 *
 	 */
-	private function _render( $text ) {
+	public function render( $text ) {
 		if ( ZC_PARSER == 'Textile' )
 			return $this->textile->TextileThis( $text );
 		elseif ( ZC_PARSER == 'TextileAlike' )
@@ -795,8 +852,8 @@ class ZeroCms {
 			return $this->current_struct;
 		
 		// don't bother reloading, if we are NOT admin and there IS a strucuture in cache
-		if ( ! is_null( $cached_struct = $this->_cacheRead( 'site-structure' ) )
-			&& ! is_null( $cached_titles = $this->_cacheRead( 'site-titles' ) )
+		if ( ! is_null( $cached_struct = $this->cacheRead( 'site-structure' ) )
+			&& ! is_null( $cached_titles = $this->cacheRead( 'site-titles' ) )
 		) {
 			$this->current_struct = $cached_struct;
 			$this->current_titles = $cached_titles;
@@ -844,13 +901,18 @@ class ZeroCms {
 		/*print_r( array( $site_titles, $site_struct ) );
 		throw( new Exception( "ASD" ) );*/
 		
+		try {
+			$this->_pluginRunHook( 'PostSiteStructGeneration', array( &$site_struct ) );
+		}
+		catch( Exception $e ) {}
+		
 		// save to stash
 		$this->current_struct = $site_struct;
 		$this->current_titles = $site_titles;
 		
 		// write to cache
-		$this->_cacheWrite( 'site-titles', $site_titles );
-		$this->_cacheWrite( 'site-structure', $site_struct );
+		$this->cacheWrite( 'site-titles', $site_titles );
+		$this->cacheWrite( 'site-structure', $site_struct );
 		
 		return $site_struct;
 	}
@@ -1063,4 +1125,41 @@ class ZeroCms {
 	}
 }
 
-?>
+
+class ZeroCmsHookException extends Exception {
+	
+	private $args = array();
+	
+	// Redefine the exception so message isn't optional
+	public function __construct($message, $code = 0, Exception $previous = null) {
+		if ( ! is_array( $message ) )
+			throw new Exception( "ZeroCmsHookException needs array message format" );
+		$message_str = "";
+		if ( isset( $message[ 'error' ] ) ) {
+			$message_str = $message[ 'error' ];
+			unset( $message[ 'error' ] );
+		}
+		$this->args = $message;
+		parent::__construct($message_str, $code, $previous);
+	}
+	
+	public function hasArg( $name ) {
+		return isset( $this->args[ $name ] );
+	}
+	
+	public function getArg( $name ) {
+		return $this->hasArg( $name ) ? $this->args[ $name ] : null;
+	}
+}
+
+class ZeroCmsPlugin {
+	private $zcms;
+	
+	public function __construct( &$zcms ) {
+		$this->zcms = $zcms;
+	}
+	
+	protected function getZcms() {
+		return $this->zcms;
+	}
+}
