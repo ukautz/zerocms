@@ -292,7 +292,7 @@ class ZeroCmsPluginSearchEngine extends ZeroCmsPlugin {
 		}
 		if ( $sorted ) {
 			$sorted_keys = array_keys( $unique );
-			usort( $sorted_keys, function( $a, $b ) {
+			function _sort_extract_words( $a, $b ) {
 				global $unique;
 				return $unique[ $a ] == $unique[ $b ]
 					? 0
@@ -300,7 +300,8 @@ class ZeroCmsPluginSearchEngine extends ZeroCmsPlugin {
 						? 1
 						: 0
 					);
-			} );
+			}
+			usort( $sorted_keys, '_sort_extract_words' );
 			$unique_sorted = array();
 			foreach ( $sorted_keys as $word ) {
 				$unique_sorted[ $word ] = $unique[ $word ];
